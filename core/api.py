@@ -28,9 +28,10 @@ def get_book_list(request):
 @api.get("/book/detail/{book_id}", response=BookDetailSchema)
 def get_detail(request, book_id: int):
     book = Book.objects.filter(id=book_id).prefetch_related("Rating").first()
+    ratings = book.Rating.all()
+    book_rate_schema = [BookRatingSchema(**rating.__dict__) for rating in ratings]
+    rate = round(sum(rating.rate for rating in ratings) / len(ratings), 1)
     book_schema = BookSchema(**book.__dict__)
-    book_rate_schema = [BookRatingSchema(**rating.__dict__) for rating in book.Rating.all()]
-    rate = round(sum(rating.rate for rating in book.Rating.all()) / len(book.Rating.all()), 2)
     return BookDetailSchema(book=book_schema, rate=rate, ratings=book_rate_schema)
 
 
