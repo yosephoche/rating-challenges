@@ -5,6 +5,7 @@ from ninja import NinjaAPI
 
 from core.Schemas import BookSchema, CreateBookSchema, BookDetailSchema, BookRatingSchema, AddRatingSchema
 from core.models import Book, BookRating
+from core.usecases import RateUseCase
 
 api = NinjaAPI()
 
@@ -27,17 +28,12 @@ def get_book_list(request):
 
 @api.get("/book/detail/{book_id}", response=BookDetailSchema)
 def get_detail(request, book_id: int):
-    book = Book.objects.filter(id=book_id).prefetch_related("Rating").first()
-    ratings = book.Rating.all()
-    book_rate_schema = [BookRatingSchema(**rating.__dict__) for rating in ratings]
-    rate = round(sum(rating.rate for rating in ratings) / len(ratings), 1)
-    book_schema = BookSchema(**book.__dict__)
-    return BookDetailSchema(book=book_schema, rate=rate, ratings=book_rate_schema)
+    response = RateUseCase.get_book_with_review(book_id)
+    return response
 
 
 @api.post("/add-rating/{book_id}", response=BookRatingSchema)
 def add_rating(request, book_id: int, payload: AddRatingSchema):
-    book = Book.objects.filter(id=book_id).first()
-    book_rate = BookRating.objects.create(fk_book=book, rate=payload.rate, review=payload.review)
+    response = RateUseCase.make_review(book_id, payload)
 
-    return BookRatingSchema(**book_rate.__dict__)
+    return response
